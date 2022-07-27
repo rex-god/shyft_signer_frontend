@@ -1,36 +1,93 @@
+import { useWallet } from "@solana/wallet-adapter-react";
+import type { NextPage } from "next";
+import React, { useState, useMemo } from "react";
+import Head from "next/head";
+import styles from "../styles/Home.module.css";
+import { Transaction } from "@solana/web3.js";
 import {
+  ConnectionProvider,
+  WalletProvider,
+} from "@solana/wallet-adapter-react";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import {
+  CoinbaseWalletAdapter,
+  GlowWalletAdapter,
+  PhantomWalletAdapter,
+  SlopeWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import {
+  WalletModalProvider,
   WalletDisconnectButton,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import * as bs58 from 'bs58';
-import type { NextPage } from "next";
-import React, { useState, useEffect } from "react";
-import Head from "next/head";
-import styles from "../styles/Home.module.css";
-import { Message, Transaction } from "@solana/web3.js";
+import { Connection, clusterApiUrl } from "@solana/web3.js";
+import {
+  createDefaultAuthorizationResultCache,
+  SolanaMobileWalletAdapter,
+} from "@solana-mobile/wallet-adapter-mobile";
+
+// Default styles that can be overridden by your app
+require("@solana/wallet-adapter-react-ui/styles.css");
 
 const Home: NextPage = () => {
-  const [response, setResponse] = useState<string | undefined>();
-  const { connection } = useConnection();
-  const { publicKey, wallet, signTransaction } = useWallet();
+  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
+  const network = WalletAdapterNetwork.Devnet;
 
-  const handleSubmit = (async (event: any) => {
+  // You can also provide a custom RPC endpoint.
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  console.log(endpoint);
+  
+
+  // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
+  // Only the wallets you configure here will be compiled into your application, and only the dependencies
+  // of wallets that your users connect to will be loaded.
+  const wallets = useMemo(
+    () => [
+      new SolanaMobileWalletAdapter({
+        appIdentity: { name: "Solana Wallet Adapter App" },
+        authorizationResultCache: createDefaultAuthorizationResultCache(),
+      }),
+      new CoinbaseWalletAdapter({ network }),
+      new PhantomWalletAdapter({ network }),
+      new GlowWalletAdapter({ network }),
+      new SlopeWalletAdapter({ network }),
+      new SolflareWalletAdapter({ network }),
+      new TorusWalletAdapter(),
+    ],
+    [network]
+  );
+  const [response, setResponse] = useState<string | undefined>();
+  const connection = new Connection(clusterApiUrl(network), 'confirmed');
+  console.log(connection);
+
+  const { publicKey, signTransaction } = useWallet();
+
+  const handleSubmit = async (event: any) => {
     // Stop the form from submitting and refreshing the page.
-    event.preventDefault()
+    event.preventDefault();
     const encodedTransaction = event.target.encoded_transaction.value;
-    const transactionBuffer = bs58.decode(encodedTransaction);
-    const transaction = Transaction.populate(Message.from(transactionBuffer));
-    console.log(transaction);
-    // const signedTx = await signTransaction?.(transaction);
-    // if (signedTx) {
-    //   console.log(signedTx.signatures[1].publicKey.toBase58());
-      
-      const completedTransaction = await wallet?.adapter.sendTransaction(transaction, connection)
-      setResponse(completedTransaction)
+    console.log(encodedTransaction);
+
+    const recoveredTransaction = Transaction.from(
+      Buffer.from(encodedTransaction, "base64")
+    );
+    console.log("recoveredTransaction", recoveredTransaction);
+
+    const signedTx = await signTransaction?.(recoveredTransaction);
+    console.log("signedTx", signedTx);
+
+    if (signedTx) {
+      const completedTransaction = await connection.sendRawTransaction(
+        signedTx?.serialize()
+      );
+      setResponse(completedTransaction);
       return completedTransaction;
-    // }
-  });
+    } else {
+      return null;
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -40,10 +97,17 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className={styles.walletButtons}>
-        <WalletMultiButton />
-        <WalletDisconnectButton />
-      </div>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <div className={styles.walletButtons}>
+              <WalletMultiButton />
+              <WalletDisconnectButton />
+            </div>
+            {/* Your app's components go here, nested within the context providers. */}
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
       <div>
         <h3>
           Wallet Address: <code>{publicKey?.toBase58()}</code>
@@ -62,9 +126,7 @@ const Home: NextPage = () => {
             Submit
           </button>
         </form>
-        <div>
-          { response }
-        </div>
+        <div>{response}</div>
       </div>
       <main className={styles.main}></main>
     </div>
