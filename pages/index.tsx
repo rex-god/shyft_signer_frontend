@@ -3,7 +3,7 @@ import type { NextPage } from "next";
 import React, { useState, useMemo } from "react";
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
-import { Transaction } from "@solana/web3.js";
+import { confirmTransactionFromFrontend } from 'shyft-js';
 import {
   ConnectionProvider,
   WalletProvider,
@@ -37,12 +37,7 @@ const Home: NextPage = () => {
 
   // You can also provide a custom RPC endpoint.
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  console.log(endpoint);
   
-
-  // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
-  // Only the wallets you configure here will be compiled into your application, and only the dependencies
-  // of wallets that your users connect to will be loaded.
   const wallets = useMemo(
     () => [
       new SolanaMobileWalletAdapter({
@@ -58,35 +53,30 @@ const Home: NextPage = () => {
     ],
     [network]
   );
-  const [response, setResponse] = useState<string | undefined>();
+  const [response, setResponse] = useState<string | any>();
   const connection = new Connection(clusterApiUrl(network), 'confirmed');
-  console.log(connection);
 
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
 
   const handleSubmit = async (event: any) => {
+    try {
     // Stop the form from submitting and refreshing the page.
     event.preventDefault();
     const encodedTransaction = event.target.encoded_transaction.value;
-    console.log(encodedTransaction);
 
-    const recoveredTransaction = Transaction.from(
-      Buffer.from(encodedTransaction, "base64")
-    );
-    console.log("recoveredTransaction", recoveredTransaction);
-
-    const signedTx = await signTransaction?.(recoveredTransaction);
-    console.log("signedTx", signedTx);
-
-    if (signedTx) {
-      const completedTransaction = await connection.sendRawTransaction(
-        signedTx?.serialize()
-      );
+    if (wallet !== null && typeof signTransaction !== 'undefined') {
+      const shyftWallet = {
+        wallet,
+        signTransaction,
+      }
+      const completedTransaction = await confirmTransactionFromFrontend(connection, encodedTransaction, shyftWallet);
       setResponse(completedTransaction);
-      return completedTransaction;
     } else {
-      return null;
+      setResponse('Some error occured');
     }
+  } catch(err) {
+    setResponse('Some error occured');
+  }
   };
 
   return (
