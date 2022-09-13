@@ -3,7 +3,6 @@ import type { NextPage } from "next";
 import React, { useState, useMemo } from "react";
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
-import { confirmTransactionFromFrontend } from 'shyft-js';
 import {
   ConnectionProvider,
   WalletProvider,
@@ -22,11 +21,13 @@ import {
   WalletDisconnectButton,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { Connection, clusterApiUrl, Keypair, Signer } from "@solana/web3.js";
 import {
   createDefaultAuthorizationResultCache,
   SolanaMobileWalletAdapter,
 } from "@solana-mobile/wallet-adapter-mobile";
+import { signTransactionFromFrontend, confirmTransactionFromFrontend } from "../utils/transaction-signer";
+import { decode } from "bs58";
 
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -56,25 +57,35 @@ const Home: NextPage = () => {
   const [response, setResponse] = useState<string | any>();
   const connection = new Connection(clusterApiUrl(network), 'confirmed');
 
-  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
+  const { publicKey, wallet, signTransaction } = useWallet();
 
   const handleSubmit = async (event: any) => {
     try {
     // Stop the form from submitting and refreshing the page.
     event.preventDefault();
-    const encodedTransaction = event.target.encoded_transaction.value;
+    const encodedTransaction = event.target.encoded_transaction.value as string;
+    const privateKey = event.target?.private_key?.value;
+    let transaction: string;
+
+    if (privateKey) {
+      const signer = Keypair.fromSecretKey(decode(privateKey)) as Signer; 
+      transaction = await signTransactionFromFrontend(encodedTransaction, signer);
+    } else {
+      transaction = encodedTransaction;
+    }
 
     if (wallet !== null && typeof signTransaction !== 'undefined') {
       const shyftWallet = {
         wallet,
         signTransaction,
       }
-      const completedTransaction = await confirmTransactionFromFrontend(connection, encodedTransaction, shyftWallet);
+      const completedTransaction = await confirmTransactionFromFrontend(connection, transaction, shyftWallet);
       setResponse(completedTransaction);
     } else {
       setResponse('Some error occured');
     }
   } catch(err) {
+    console.log(err);
     setResponse('Some error occured');
   }
   };
@@ -103,6 +114,15 @@ const Home: NextPage = () => {
           Wallet Address: <code>{publicKey?.toBase58()}</code>
         </h3>
         <form onSubmit={handleSubmit}>
+        <div className="form-group">
+            <label>Encoded Transaction</label>
+            <textarea
+              name="private_key"
+              className="form-control"
+              id="private_key"
+              placeholder="Enter Private Key (Optional)"
+            />
+          </div>
           <div className="form-group">
             <label>Encoded Transaction</label>
             <textarea

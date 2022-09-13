@@ -36,8 +36,7 @@
         "bs58": "^5.0.0",
         "next": "^12.1.0",
         "react": "^18.0.0",
-        "react-dom": "^18.0.0",
-        "shyft-js": "github:Shyft-to/js"
+        "react-dom": "^18.0.0"
     },
     "devDependencies": {
         "@types/node": "^18.0.0",
