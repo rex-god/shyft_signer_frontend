@@ -115,7 +115,7 @@ const Home: NextPage = () => {
         </h3>
         <form onSubmit={handleSubmit}>
         <div className="form-group">
-            <label>Encoded Transaction</label>
+            <label>Private key of other signer</label>
             <textarea
               name="private_key"
               className="form-control"
