@@ -58,6 +58,7 @@ const Home: NextPage = () => {
   );
   const [response, setResponse] = useState<string | any>();
   const [isErrorOccured, setError] = useState<boolean | any>();
+  const [isSuccess, setSuccess] = useState<boolean | any>();
   const connection = new Connection(clusterApiUrl(network), 'confirmed');
 
   const { publicKey, wallet, signTransaction } = useWallet();
@@ -93,14 +94,17 @@ const Home: NextPage = () => {
       const completedTransaction = await confirmTransactionFromFrontend(connection, transaction, shyftWallet);
       setResponse(completedTransaction);
       setError(false);
+      setSuccess(true)
     } else {
       setResponse('Some error occured');
       setError(true);
+      setSuccess(false)
     }
   } catch(err: any) {
     console.log(err);
     setResponse(JSON.stringify(err.stack));
     setError(true)
+    setSuccess(false)
   }
   };
 
@@ -168,8 +172,12 @@ const Home: NextPage = () => {
           </button>
         </form>
         {
-          isErrorOccured ? (<><hr /><ErrorComponent err={response} /></>) : (<><hr /><div className="alert alert-success" role="alert">Transaction signature: <code>{response}</code>
-          </div></>)
+          isErrorOccured ? (<><hr /><ErrorComponent err={response} /></>) : (<></>)
+        }
+
+        {
+          isSuccess ? (<><hr /><div className="alert alert-success" role="alert">Transaction signature: <code>{response}</code>
+          </div></>) : (<></>)
         }
         
       </div>
