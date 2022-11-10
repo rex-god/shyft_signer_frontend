@@ -18,11 +18,11 @@ export async function confirmTransactionFromFrontend(connection: Connection, enc
   return confirmTransaction;
 }
 
-export async function signTransactionFromFrontend(encodedTransaction: string, signer: Signer): Promise<string> {
+export async function signTransactionFromFrontend(encodedTransaction: string, signer: Signer[]): Promise<string> {
   const recoveredTransaction = Transaction.from(
     Buffer.from(encodedTransaction, 'base64')
   );
-  recoveredTransaction.partialSign(signer);
+  recoveredTransaction.partialSign(...signer);
   const serializedTransaction = recoveredTransaction.serialize({ requireAllSignatures: false });
   const transactionBase64 = serializedTransaction.toString('base64');
   return transactionBase64;

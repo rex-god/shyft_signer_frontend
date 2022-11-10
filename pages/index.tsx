@@ -28,11 +28,13 @@ import {
 } from "@solana-mobile/wallet-adapter-mobile";
 import { signTransactionFromFrontend, confirmTransactionFromFrontend } from "../utils/transaction-signer";
 import { decode } from "bs58";
+import ErrorComponent from "../components/ErrorComponent";
 
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const Home: NextPage = () => {
+  const [privateKeys, setPrivateKeys] = useState([{ id: 1, privateKey: '' }]);
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
   const network = WalletAdapterNetwork.Devnet;
 
@@ -55,20 +57,29 @@ const Home: NextPage = () => {
     [network]
   );
   const [response, setResponse] = useState<string | any>();
+  const [isErrorOccured, setError] = useState<boolean | any>();
   const connection = new Connection(clusterApiUrl(network), 'confirmed');
 
   const { publicKey, wallet, signTransaction } = useWallet();
+
+  const addField = (event: any) => {
+    setPrivateKeys([...privateKeys, { id: Math.floor(
+      Math.random() * 100 + 1
+    ), privateKey: '' }]);
+  }
 
   const handleSubmit = async (event: any) => {
     try {
     // Stop the form from submitting and refreshing the page.
     event.preventDefault();
     const encodedTransaction = event.target.encoded_transaction.value as string;
-    const privateKey = event.target?.private_key?.value;
     let transaction: string;
 
-    if (privateKey) {
-      const signer = Keypair.fromSecretKey(decode(privateKey)) as Signer; 
+    if (privateKeys[0].privateKey !== '') {
+      const signer = privateKeys.map((key) => {
+        const signer = Keypair.fromSecretKey(decode(key.privateKey)) as Signer;
+        return signer;
+      })
       transaction = await signTransactionFromFrontend(encodedTransaction, signer);
     } else {
       transaction = encodedTransaction;
@@ -81,12 +92,15 @@ const Home: NextPage = () => {
       }
       const completedTransaction = await confirmTransactionFromFrontend(connection, transaction, shyftWallet);
       setResponse(completedTransaction);
+      setError(false);
     } else {
       setResponse('Some error occured');
+      setError(true);
     }
-  } catch(err) {
+  } catch(err: any) {
     console.log(err);
-    setResponse('Some error occured');
+    setResponse(JSON.stringify(err.stack));
+    setError(true)
   }
   };
 
@@ -114,15 +128,32 @@ const Home: NextPage = () => {
           Wallet Address: <code>{publicKey?.toBase58()}</code>
         </h3>
         <form onSubmit={handleSubmit}>
-        <div className="form-group">
-            <label>Private key of other signer</label>
-            <textarea
-              name="private_key"
-              className="form-control"
-              id="private_key"
-              placeholder="Enter Private Key (Optional)"
-            />
-          </div>
+          {privateKeys.map((key, index) => (
+                    <div key={index} className="form-group">
+                    <label>Private key of other signer</label>
+                    <textarea
+                      name="private_keys"
+                      className="form-control"
+                      id="private_keys"
+                      placeholder="Enter Private Key (Optional)"
+                      value={key.privateKey}
+                      onChange={(e) => {
+                        const privateKey = e.target.value;
+                        setPrivateKeys((currentField) =>
+                        currentField.map((x) =>
+                            x.id === key.id
+                              ? {
+                                  ...x,
+                                  privateKey,
+                                }
+                              : x
+                          )
+                        );
+                      }}
+                    />
+                  </div>
+          ))}
+          <button className="bg-warning" type="button" onClick={addField}>Add more</button>
           <div className="form-group">
             <label>Encoded Transaction</label>
             <textarea
@@ -136,7 +167,11 @@ const Home: NextPage = () => {
             Submit
           </button>
         </form>
-        <div>{response}</div>
+        {
+          isErrorOccured ? (<><hr /><ErrorComponent err={response} /></>) : (<><hr /><div className="alert alert-success" role="alert">Transaction signature: <code>{response}</code>
+          </div></>)
+        }
+        
       </div>
       <main className={styles.main}></main>
     </div>
