@@ -9,7 +9,6 @@ import {
 } from "../utils/transaction-signer";
 import ErrorComponent from "./ErrorComponent";
 import { useNetworkConfiguration } from "../contexts/NetworkConfigurationProvider";
-import Link from "next/link";
 
 const TransactionSigner: NextPage = () => {
   const [privateKeys, setPrivateKeys] = useState([{ id: 1, privateKey: "" }]);
@@ -144,12 +143,13 @@ const TransactionSigner: NextPage = () => {
           <hr />
           <div className="alert alert-success" role="alert">
             Transaction signature: {""}
-            <Link
+            <a
               href={`https://explorer.solana.com/tx/${response}?cluster=${networkConfiguration}`}
 							target="_blank"
+							rel="noreferrer"
             >
               { response }
-            </Link>
+            </a>
           </div>
         </>
       ) : (

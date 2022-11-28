@@ -5,10 +5,8 @@ import { useConnection } from '@solana/wallet-adapter-react';
 export const NetworkSwitcher: FC = () => {
   const { networkConfiguration, setNetworkConfiguration } = useNetworkConfiguration();
 
-  console.log(networkConfiguration);
 	const { connection } = useConnection();
-	console.log(connection);
-	
+	console.log(connection);	
 
   return (
 		<div className="w-100">
