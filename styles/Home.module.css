@@ -120,3 +120,21 @@
     flex-direction: column;
   }
 }
+
+.animation {
+  height: 10px;
+  color: #336EFF;
+  animation-name: leftToRight;
+  animation-duration: 25s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leftToRight {
+  0% {
+    transform: translateX(-100vw);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}

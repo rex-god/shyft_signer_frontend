@@ -11,6 +11,8 @@ import {
 import ErrorComponent from "./ErrorComponent";
 import { useNetworkConfiguration } from "../contexts/NetworkConfigurationProvider";
 
+import styles from '../styles/Home.module.css';
+
 const TransactionSigner: NextPage = () => {
   const [privateKeys, setPrivateKeys] = useState([{ id: 1, privateKey: "" }]);
 
@@ -157,6 +159,7 @@ const TransactionSigner: NextPage = () => {
       ) : (
         <></>
       )}
+      <div className={`mt-5 ${styles.animation}`}><p>* Versioned transaction now supported with phantom wallet</p></div>
     </div>
   );
 };
