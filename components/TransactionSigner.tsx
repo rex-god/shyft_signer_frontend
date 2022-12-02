@@ -5,6 +5,7 @@ import { Keypair, Signer } from "@solana/web3.js";
 import { decode } from "bs58";
 import {
   confirmTransactionFromFrontend,
+  ShyftWallet,
   signTransactionFromFrontend,
 } from "../utils/transaction-signer";
 import ErrorComponent from "./ErrorComponent";
@@ -18,7 +19,7 @@ const TransactionSigner: NextPage = () => {
   const [isSuccess, setSuccess] = useState<boolean | any>();
   const { connection } = useConnection();
 
-  const { publicKey, wallet, signTransaction } = useWallet();
+  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
   const { networkConfiguration } = useNetworkConfiguration();
 
   const addField = (event: any) => {
@@ -55,7 +56,8 @@ const TransactionSigner: NextPage = () => {
         const shyftWallet = {
           wallet,
           signTransaction,
-        };
+          signAllTransactions,
+        } as ShyftWallet;
         const completedTransaction = await confirmTransactionFromFrontend(
           connection,
           transaction,

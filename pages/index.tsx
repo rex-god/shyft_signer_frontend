@@ -1,14 +1,21 @@
 import type { NextPage } from "next";
 import Head from "next/head";
+import dynamic from "next/dynamic";
 import styles from "../styles/Home.module.css";
 
 import { ContextProvider } from "../contexts/ContextProvider";
 import TransactionSigner from "../components/TransactionSigner";
-import {
-  WalletDisconnectButton,
-  WalletMultiButton,
-} from "@solana/wallet-adapter-react-ui";
 import { NetworkSwitcher } from "../components/NetworkSwitcher";
+
+const WalletMultiButtonDynamic = dynamic(
+  async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+  { ssr: false }
+);
+
+const WalletDisconnectButtonDynamic = dynamic(
+  async () => (await import('@solana/wallet-adapter-react-ui')).WalletDisconnectButton,
+  { ssr: false }
+);
 
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -25,8 +32,8 @@ const Home: NextPage = () => {
         <div className="row">
           <div className="col-12 col-lg-6">
             <div className={styles.walletButtons}>
-              <WalletMultiButton />
-              <WalletDisconnectButton />
+              <WalletMultiButtonDynamic />
+              <WalletDisconnectButtonDynamic />
             </div>
           </div>
           <div className="col-12 col-lg-6">
